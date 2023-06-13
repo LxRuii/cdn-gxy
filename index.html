@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工学云日报</title>
+  <!-- vue框架 -->
+  <script src='./js/vue.js'></script>
+  <!-- 引入样式 -->
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+  <!-- 引入组件库 -->
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+  <!-- md5 https://cdn.jsdelivr.net/gh/emn178/js-md5/build/md5.min.js -->
+  <script src="./js/md5.js"></script>
+  <script>method = md5;</script>
+  <!-- axios -->
+  <script src="./js/axios/axios.min.js"></script>
+  <script src="./js/api.js"></script>
+  <!-- 引入 CDN Crypto.js 开始 AES加密 注意引入顺序 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/enc-base64.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/md5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/evpkdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/cipher-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/aes.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/pad-pkcs7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/mode-ecb.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/enc-utf8.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/enc-hex.min.js"></script>
+  <!-- 引入 CDN Crypto.js 结束 -->
+  <!-- AES -->
+  <script src="./js/AES.js"></script>
+  <!-- day.js -->
+  <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js"></script>
+  <script>
+    dayjs().format()
+  </script>
+  <link rel="stylesheet" href="./css/css1.css">
+</head>
+
+<body>
+  <div id="app">
+
+    <el-dialog class="dialog" center title="登录" :visible.sync="dialogVisible" width="40%" :before-close="handleClose">
+      <div class="dl-box">
+        <el-form label-position="left" label-width="80px" :model="form">
+          <el-form-item label="手机号">
+            <el-input v-model="form.phone" placeholder="请输入工学云账号"></el-input>
+          </el-form-item>
+          <el-form-item label="密码">
+            <el-input v-model="form.password" placeholder="请输入工学云密码"></el-input>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="getSign">登 录</el-button>
+      </span>
+    </el-dialog>
+
+
+    <el-card class="box-card">
+      <div class="box">
+
+        <div class="top">
+          <h1>Hello!!</h1>
+          <h2>尊贵的，{{planName}}的同学</h2>
+        </div>
+
+        <div class="type">
+          <h3 style="margin: 50px 0 10px 0;">请选择类型：</h3>
+          <el-radio v-model="radio" label="日报">日报</el-radio>
+          <el-radio disabled v-model="radio" label="周报">周报</el-radio>
+          <el-radio disabled v-model="radio" label="月报">月报</el-radio>
+        </div>
+
+
+        <div class="date">
+          <h3 style="margin: 50px 0 10px 0;">请选择日期：</h3>
+          <el-tabs v-model="activeDateType">
+            <el-tab-pane label="单日模式" name="first">
+              <div class="u"><u>只补</u> 选择的日期</div>
+              <el-date-picker v-model="thisDay" type="date" placeholder="选择日期" @change="addDateChange"></el-date-picker>
+
+              <div class="date-picker"><el-button type="primary" @click="getRb">我们开始吧</el-button></div>
+
+            </el-tab-pane>
+
+            <el-tab-pane label="多日模式" name="fourth">
+              <div class="u">从开始日期 <u>连续补至</u> 结束日期</div>
+              <el-date-picker v-model="addDate" type="daterange" format="yyyy-MM-dd" range-separator="至"
+                start-placeholder="开始日期" end-placeholder="结束日期" @change="addDateChange">
+              </el-date-picker>
+              <div class="date-picker"><el-button type="primary" @click="getRb">我们开始吧</el-button></div>
+
+            </el-tab-pane>
+          </el-tabs>
+
+        </div>
+      </div>
+
+
+
+
+      <div class="tables">
+        <el-table :data="tableData" height="300">
+          <el-table-column fixed prop="date" label="日期" width="150">
+          </el-table-column>
+          <el-table-column prop="zip" label="日报题目" width="150">
+          </el-table-column>
+          <el-table-column prop="address" label="日报内容" width="400">
+          </el-table-column>
+        </el-table>
+      </div>
+
+    </el-card>
+
+  </div>
+
+
+
+
+  <script>
+    const app = new Vue({
+      el: '#app',
+      data() {
+        return {
+          message: 'hello111',
+          dialogVisible: true,
+          t: '', // 加密时间戳
+          token: '', // token
+          userId: '', // userId
+          planId: '', // planId
+          planName: '', // planName
+          sign: '', // sign
+          startDay: '',
+          endDay: '',
+          thisDay: '',
+          radio: '日报',
+          form: {
+            phone: '15170764528',
+            password: 'Liao2041936638',
+          },
+          textData: {
+            title: '日报',
+            content: 'hello world!!'
+          },
+          activeDateType: 'first', // 日期选择模式
+          addDate: '',
+
+
+          tableData: [
+            {
+              date: '2016-05-03',
+              address: '上海市普陀区金沙江路 1518 弄',
+              zip: 200333
+            },
+            {
+              date: '2016-05-02',
+              address: '上海市普陀区金沙江路 1518 弄',
+              zip: 200333
+            },
+            {
+              date: '2016-05-04',
+              address: '上海市普陀区金沙江路 1518 弄',
+              zip: 200333
+            },
+            {
+              date: '2016-05-01',
+              address: '上海市普陀区金沙江路 1518 弄',
+              zip: 200333
+            },
+            {
+              date: '2016-05-08',
+              address: '上海市普陀区金沙江路 1518 弄',
+              zip: 200333
+            },
+            {
+              date: '2016-05-06',
+              address: '上海市普陀区金沙江路 1518 弄',
+              zip: 200333
+            },
+            {
+              date: '2016-05-07',
+              address: '上海市普陀区金沙江路 1518 弄',
+              zip: 200333
+            }
+          ]
+        }
+
+
+      },
+      mounted() {
+        this.thisDay = dayjs().format('YYYY-MM-DD 00:00:00')
+        console.log(this.thisDay);
+        this.datePwd()
+        this.getDay()
+
+        ajax({
+          url: 'https://api.apiopen.top/api/sentences',
+          method: 'get'
+        }).then(res => {
+          console.log(res.result);
+        })
+        console.log(getAES('2'));
+      },
+      methods: {
+        addDateChange(e) {
+          if (Array.isArray(e)) {
+            this.startDay = dayjs(this.addDate[0]).format("YYYY-MM-DD")
+            this.endDay = dayjs(this.addDate[1]).format("YYYY-MM-DD")
+            console.log(this.startDay, this.endDay);
+          } else {
+            this.thisDay = dayjs(e).format("YYYY-MM-DD")
+            console.log(this.thisDay);
+          }
+          console.log(Array.isArray(e));
+        },
+
+        /**
+         * 解密
+        */
+
+        // md5加密
+        md5(v) {
+          return method(v.toString(), 'text')
+        },
+        // 加密时间搓
+        datePwd() {
+          console.log(this.md5(1));
+          let date = new Date()
+          let time = date.getTime()
+          let pwt = getAES(time)
+          this.t = pwt.toLowerCase()
+          console.log(this.t, '加密时间cuo');
+        },
+
+        // 解析sign
+        getMd5() {
+          let uid = this.userId;
+          let d = 'day'
+          let y = '3478cbbc33f84bd00d75d7dfa69e0daa'
+          let s = uid + d + this.planId + this.textData.title + y
+          this.sign = md5(s)
+        },
+
+        // 获取今日
+        getDay() {
+          console.log(dayjs().format('YYYY-MM-DD'));
+          console.log(dayjs().add(1, 'day').format('YYYY-MM-DD'));
+          console.log(dayjs().subtract(1, 'day').format('YYYY-MM-DD'));
+        },
+
+        // 关闭弹窗
+        handleClose(done) {
+          this.$confirm('确认关闭？')
+            .then(_ => {
+              done();
+            })
+            .catch(_ => { });
+        },
+
+
+        /**
+         * 方法
+        */
+
+        // 登录
+        getSign() {
+          this.datePwd() // 加密时间搓
+          ajax({
+            url: "https://api.moguding.net:9000/session/user/v3/login",
+            methods: "POST",
+            header: {
+              'content-type': 'application/json;charset=UTF-8',
+            },
+            data: {
+              "version": "5.3.0",
+              "password": getAES(this.form.password),
+              "loginType": "android",
+              "device": "android",
+              "t": this.t,
+              "phone": getAES(this.form.phone),
+              "uuid": "",
+            },
+          }).then((res) => {
+            if (res.code == 200) {
+              console.log('登录成功');
+              this.$message({
+                message: '登录成功',
+                type: 'success',
+              });
+              this.dialogVisible = false
+
+              this.userId = res.data.userId
+              this.token = res.data.token
+
+              // 获取planId
+              console.log('正在获取planId');
+              this.datePwd() // 加密时间搓
+              ajax({
+                url: "https://api.moguding.net:9000/practice/plan/v3/getPlanByStu",
+                methods: "POST",
+                data: {
+                  "t": this.t,
+                  "state": 1,
+                },
+                headers: {
+                  "sign": this.md5(this.userId + "student" + "3478cbbc33f84bd00d75d7dfa69e0daa"),
+                  'authorization': this.token,
+                  'accept': 'application/json, text/plain, */*',
+                  "rolekey": 'student',
+                }
+              }).then((res) => {
+                if (res.code == 200) {
+                  this.planId = res.data[0].planId
+                  this.planName = res.data[0].planName
+                  console.log(this.planId, 'planId获取成功');
+
+                  //  获取了任务id就往下走
+                  this.getMd5()
+                  // this.getRb()
+                } else {
+                  console.log('planId获取失败');
+                }
+              })
+
+            } else {
+              this.$message({
+                message: res.msg,
+                type: 'error',
+              });
+            }
+          })
+        },
+
+        // 填写日报
+        getRb() {
+          console.log('正在填写日报，填写日报的时间是：', this.thisDay);
+          this.datePwd() // 加密时间搓
+          ajax({
+            url: "https://api.moguding.net:9000/practice/paper/v4/save",
+            methods: "POST",
+            data: {
+              "content": this.textData.content,
+              "imageList": [],
+              "planId": this.planId,
+              "reportTime": this.thisDay,
+              "reportType": "day",
+              "t": this.t,
+              "title": this.textData.title,
+            },
+            headers: {
+              "sign": this.sign,
+              'authorization': this.token,
+              'accept': 'application/json, text/plain, */*',
+              "rolekey": 'student',
+            }
+          }).then((res) => {
+            if (res.code == 200) {
+              console.log('日报填写成功', this.thisDay);
+              // getServers()
+            }
+          })
+        }
+
+      }
+    })
+  </script>
+</body>
+
+</html>
