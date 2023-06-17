@@ -62,7 +62,7 @@
     </el-dialog>
 
 
-    <el-card class="box-card" v-if="!messageShow">
+    <el-card class="box-card" v-if="messageShow">
       <div class="box">
 
         <div class="top">
@@ -129,11 +129,11 @@
       data() {
         return {
           messageShow: false,
-          dialogVisible: false,
+          dialogVisible: true,
           t: '', // 加密时间戳
-          token: '', // token
-          userId: '', // userId
-          planId: '', // planId
+          token: 'eyJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJtb2d1ZGluZy11c2VyIiwic3ViIjoie1wibG9naW5UeXBlXCI6XCJhbmRyb2lkXCIsXCJ1c2VySWRcIjoxMDQwOTc4NjN9IiwiYXVkIjoibW9ndWRpbmciLCJleHAiOjIwMDI2MTQ4MjgsIm5iZiI6MTY4Njk5NDcyOCwiaWF0IjoxNjg2OTk1NjI4fQ.n5BWvdNyXGnhrp6zOJuf1EKpYYmhQ6BFYpSlSAXsyjTbFoN73M_z2EmARNpj5SF_dHF3hQ1WFyua0TZY6Sx5Kw', // token
+          userId: '104097863', // userId
+          planId: 'f554902da5fb17f296d5f8fb3f8bc008 ', // planId
           planName: '', // planName
           sign: '', // sign
           startDay: '',
@@ -194,8 +194,13 @@
 
       },
       mounted() {
+        if (this.token) {
+          this.dialogVisible = false
+          this.messageShow = true
+        } else {
+          this.dialogVisible = true
+        }
         this.thisDay = dayjs().format('YYYY-MM-DD 00:00:00')
-        console.log(this.thisDay);
         this.datePwd()
         this.getDay()
 
@@ -213,6 +218,7 @@
             this.startDay = dayjs(this.addDate[0]).format("YYYY-MM-DD")
             this.endDay = dayjs(this.addDate[1]).format("YYYY-MM-DD")
             console.log(this.startDay, this.endDay);
+            this.getRbs(this.startDay, this.endDay)
           } else {
             this.thisDay = dayjs(e).format("YYYY-MM-DD")
             console.log(this.thisDay);
@@ -293,6 +299,9 @@
                 message: '登录成功',
                 type: 'success',
               });
+              console.log(res.data.token);
+              console.log(res.data.userId);
+
               this.messageShow = true
               this.dialogVisible = false
 
@@ -338,8 +347,9 @@
           })
         },
 
-        // 填写日报
+        // 填写日报 单日
         getRb() {
+          this.getMd5()
           console.log('正在填写日报，填写日报的时间是：', this.thisDay);
           this.datePwd() // 加密时间搓
           ajax({
@@ -362,12 +372,29 @@
             }
           }).then((res) => {
             if (res.code == 200) {
-              console.log('日报填写成功', this.thisDay);
+              this.$notify({
+                title: '日报填写成功',
+                message: '填写日期' + this.thisDay,
+                type: 'success'
+              });
               // getServers()
+            } else {
+              this.$notify({
+                title: '失败',
+                message: dayjs(this.thisDay).format('YYYY-MM-DD') + '\n' + res.msg,
+                type: 'warning'
+              });
+              console.log(res);
             }
           })
-        }
+        },
 
+        // 补多日
+        getRbs(startDay, endDay) {
+          this.startDay = startDay
+          this.endDay = endDay
+          console.log(dayjs(this.startDay).startOf('day'));
+        }
       }
     })
   </script>
