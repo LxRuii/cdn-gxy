@@ -50,7 +50,7 @@
             <el-input v-model="form.phone" placeholder="请输入工学云账号"></el-input>
           </el-form-item>
           <el-form-item label="密码">
-            <el-input v-model="form.password" placeholder="请输入工学云密码"></el-input>
+            <el-input type="password" show-password v-model="form.password" placeholder="请输入工学云密码"></el-input>
           </el-form-item>
         </el-form>
       </div>
@@ -62,7 +62,7 @@
     </el-dialog>
 
 
-    <el-card class="box-card">
+    <el-card class="box-card" v-if="!messageShow">
       <div class="box">
 
         <div class="top">
@@ -128,8 +128,8 @@
       el: '#app',
       data() {
         return {
-          message: 'hello111',
-          dialogVisible: true,
+          messageShow: false,
+          dialogVisible: false,
           t: '', // 加密时间戳
           token: '', // token
           userId: '', // userId
@@ -293,6 +293,7 @@
                 message: '登录成功',
                 type: 'success',
               });
+              this.messageShow = true
               this.dialogVisible = false
 
               this.userId = res.data.userId
